@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 简历分析器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            margin-top: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        label {
+            font-weight: bold;
+            color: #444;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        #result {
+            margin-top: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            display: none;
+        }
+        #loading {
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>📄 AI 简历分析器</h1>
+
+    <label>你的简历内容：</label>
+    <textarea id="resume" placeholder="把你的简历文字粘贴在这里..."></textarea>
+
+    <label>目标职位描述：</label>
+    <textarea id="job_description" placeholder="把职位 JD 粘贴在这里..."></textarea>
+
+    <button onclick="analyze()">开始分析</button>
+
+    <div id="loading">⏳ AI 分析中，请稍候...</div>
+    <div id="result"></div>
+
+    <script>
+        async function analyze() {
+            const resume = document.getElementById("resume").value;
+            const job_description = document.getElementById("job_description").value;
+
+            if (!resume || !job_description) {
+                alert("请填写简历和职位描述！");
+                return;
+            }
+
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("result").style.display = "none";
+
+            const response = await fetch("/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ resume, job_description })
+            });
+
+            const data = await response.json();
+
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("result").style.display = "block";
+            document.getElementById("result").innerText = data.result;
+        }
+    </script>
+</body>
+</html>
