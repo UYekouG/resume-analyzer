@@ -5,103 +5,292 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 简历分析器</title>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
             background-color: #f5f5f5;
+            padding: 40px 20px;
         }
-        h1 {
-            text-align: center;
-            color: #333;
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
         }
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 10px;
-            margin-top: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 { color: #333; font-size: 24px; }
+
+        .lang-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .lang-btn {
+            padding: 6px 14px;
+            border: 2px solid #4A90E2;
+            border-radius: 20px;
+            background: white;
+            color: #4A90E2;
+            cursor: pointer;
             font-size: 14px;
-            resize: vertical;
+            transition: all 0.2s;
         }
+
+        .lang-btn.active {
+            background: #4A90E2;
+            color: white;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
         label {
+            display: block;
             font-weight: bold;
             color: #444;
+            margin-bottom: 10px;
         }
-        button {
-            display: block;
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .upload-area:hover { border-color: #4A90E2; }
+
+        .upload-area input[type="file"] { display: none; }
+
+        .upload-icon { font-size: 32px; margin-bottom: 8px; }
+
+        .upload-hint { color: #888; font-size: 14px; margin-top: 6px; }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #aaa;
+            font-size: 13px;
+            margin: 12px 0;
+        }
+
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 140px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+
+        input[type="text"] {
             width: 100%;
             padding: 12px;
-            margin-top: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 14px;
             background-color: #4A90E2;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
+            transition: background 0.2s;
         }
-        button:hover {
-            background-color: #357ABD;
-        }
-        #result {
-            margin-top: 30px;
-            background: white;
-            padding: 20px;
-            border-radius: 6px;
-            white-space: pre-wrap;
-            line-height: 1.6;
-            display: none;
-        }
+
+        .analyze-btn:hover { background-color: #357ABD; }
+        .analyze-btn:disabled { background-color: #aaa; cursor: not-allowed; }
+
         #loading {
             text-align: center;
             margin-top: 20px;
             color: #888;
             display: none;
         }
+
+        .file-selected {
+            color: #4A90E2;
+            font-size: 14px;
+            margin-top: 6px;
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 </head>
 <body>
-    <h1>📄 AI 简历分析器</h1>
+<div class="container">
+    <div class="header">
+        <h1 id="title">📄 AI 简历分析器</h1>
+        <div class="lang-toggle">
+            <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+            <button class="lang-btn" onclick="setLang('en')">English</button>
+        </div>
+    </div>
 
-    <label>你的简历内容：</label>
-    <textarea id="resume" placeholder="把你的简历文字粘贴在这里..."></textarea>
+    <!-- 简历部分 -->
+    <div class="card">
+        <label id="label-resume">你的简历：</label>
 
-    <label>目标职位描述：</label>
-    <textarea id="job_description" placeholder="把职位 JD 粘贴在这里..."></textarea>
+        <div class="upload-area" onclick="document.getElementById('resume-file').click()">
+            <div class="upload-icon">📁</div>
+            <div id="upload-text">点击上传 PDF 或 Word 文件</div>
+            <div class="upload-hint" id="upload-hint">支持 .pdf / .docx 格式</div>
+            <input type="file" id="resume-file" accept=".pdf,.docx" onchange="handleFileSelect(this)">
+        </div>
 
-    <button onclick="analyze()">开始分析</button>
+        <div id="file-selected" class="file-selected"></div>
 
-    <div id="loading">⏳ AI 分析中，请稍候...</div>
+        <div class="divider" id="divider-text">或者直接粘贴文字</div>
+
+        <textarea id="resume" placeholder="把简历内容粘贴在这里..."></textarea>
+    </div>
+
+    <!-- 职位部分 -->
+    <div class="card">
+        <label id="label-job">目标职位：</label>
+        <input type="text" id="job_title" placeholder="例如：软件工程师实习、数据分析师、前端开发...">
+    </div>
+
+    <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+        <span id="btn-text">开始分析</span>
+    </button>
+
+    <div id="loading" id="loading-text">⏳ AI 分析中，请稍候...</div>
     <div id="result"></div>
+</div>
 
-    <script>
-        async function analyze() {
-            const resume = document.getElementById("resume").value;
-            const job_description = document.getElementById("job_description").value;
+<script>
+    let currentLang = "zh";
+    let selectedFile = null;
 
-            if (!resume || !job_description) {
-                alert("请填写简历和职位描述！");
-                return;
-            }
-
-            document.getElementById("loading").style.display = "block";
-            document.getElementById("result").style.display = "none";
-
-            const response = await fetch("/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ resume, job_description })
-            });
-
-            const data = await response.json();
-
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("result").style.display = "block";
-            document.getElementById("result").innerText = data.result;
+    const translations = {
+        zh: {
+            title: "📄 AI 简历分析器",
+            labelResume: "你的简历：",
+            uploadText: "点击上传 PDF 或 Word 文件",
+            uploadHint: "支持 .pdf / .docx 格式",
+            divider: "或者直接粘贴文字",
+            labelJob: "目标职位：",
+            jobPlaceholder: "例如：软件工程师实习、数据分析师、前端开发...",
+            resumePlaceholder: "把简历内容粘贴在这里...",
+            btnText: "开始分析",
+            loading: "⏳ AI 分析中，请稍候...",
+            alertFill: "请填写简历内容和目标职位！"
+        },
+        en: {
+            title: "📄 AI Resume Analyzer",
+            labelResume: "Your Resume:",
+            uploadText: "Click to upload PDF or Word file",
+            uploadHint: "Supports .pdf / .docx",
+            divider: "Or paste your resume text below",
+            labelJob: "Target Job Title:",
+            jobPlaceholder: "e.g. Software Engineer Intern, Data Analyst, Frontend Developer...",
+            resumePlaceholder: "Paste your resume content here...",
+            btnText: "Analyze",
+            loading: "⏳ Analyzing, please wait...",
+            alertFill: "Please fill in your resume and target job title!"
         }
-    </script>
+    };
+
+    function setLang(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+
+        document.getElementById("title").innerText = t.title;
+        document.getElementById("label-resume").innerText = t.labelResume;
+        document.getElementById("upload-text").innerText = t.uploadText;
+        document.getElementById("upload-hint").innerText = t.uploadHint;
+        document.getElementById("divider-text").innerText = t.divider;
+        document.getElementById("label-job").innerText = t.labelJob;
+        document.getElementById("job_title").placeholder = t.jobPlaceholder;
+        document.getElementById("resume").placeholder = t.resumePlaceholder;
+        document.getElementById("btn-text").innerText = t.btnText;
+
+        document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.remove("active"));
+        event.target.classList.add("active");
+    }
+
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (file) {
+            selectedFile = file;
+            document.getElementById("file-selected").innerText = `✅ 已选择：${file.name}`;
+            document.getElementById("resume").value = "";
+        }
+    }
+
+    async function analyze() {
+        const resume = document.getElementById("resume").value;
+        const jobTitle = document.getElementById("job_title").value;
+        const t = translations[currentLang];
+
+        if ((!resume && !selectedFile) || !jobTitle) {
+            alert(t.alertFill);
+            return;
+        }
+
+        const btn = document.getElementById("analyze-btn");
+        btn.disabled = true;
+
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("loading").innerText = t.loading;
+        document.getElementById("result").style.display = "none";
+
+        const formData = new FormData();
+        if (selectedFile) {
+            formData.append("resume_file", selectedFile);
+        } else {
+            formData.append("resume", resume);
+        }
+        formData.append("job_title", jobTitle);
+        formData.append("language", currentLang);
+
+        const response = await fetch("/analyze", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("result").style.display = "block";
+        document.getElementById("result").innerHTML = marked.parse(data.result);
+        btn.disabled = false;
+    }
+</script>
 </body>
 </html>
